@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이화 마켓 - 슬기로운 이화 생활</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['"Jua"', 'sans-serif'] } } }
+    }
+  </script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- 🔥 Firebase CDN (파이어베이스 연결을 위한 마법의 주문) 🔥 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    body { background-color: #e5e7eb; }
+  </style>
+</head>
+<body class="font-sans antialiased text-gray-800 flex justify-center min-h-screen">
+  <div id="root" class="w-full max-w-md bg-white shadow-2xl relative overflow-hidden min-h-screen flex flex-col"></div>
+
+  <script type="text/babel">
+    // ==========================================
+    // 🚀 파이어베이스 설정 (절대 수정하지 마세요!)
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvPGsPC45h2R-21F7OOrknME5WDHU8_vc",
+      authDomain: "ewha-market-9d231.firebaseapp.com",
+      projectId: "ewha-market-9d231",
+      storageBucket: "ewha-market-9d231.firebasestorage.app",
+      messagingSenderId: "258460239652",
+      appId: "1:258460239652:web:42b976175bd9c1af9d55b1",
+      measurementId: "G-FDPXM21G8F"
+    };
+
+    // 파이어베이스 초기화 및 데이터베이스(Firestore) 연결
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    // ==========================================
+
+    const { useState, useEffect, useRef } = React;
+
+    const CATEGORIES = [
+      { id: 'used', label: '중고물품' },
+      { id: 'clothes', label: '의류' },
+      { id: 'official', label: '공식물품판매' },
+      { id: 'group_buy', label: '공구모집' },
+    ];
+
+    const Icon = {
+      Plus: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>,
+      Close: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+      Image: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
+      Search: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+      ChevronLeft: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+      Message: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>,
+      User: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+      Bell: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>,
+      Users: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+      Trash: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    };
+
+    function App() {
+      const [viewStack, setViewStack] = useState(['login']);
+      const currentView = viewStack[viewStack.length - 1];
+      const navigate = (newView) => setViewStack(prev => [...prev, newView]);
+      const goBack = () => { if (viewStack.length > 1) setViewStack(prev => prev.slice(0, -1)); };
+      const resetToMain = () => { setViewStack(['main']); setActiveTab(CATEGORIES[0].id); setSearchQuery(''); };
+
+      const [email, setEmail] = useState('');
+      const [authMessage, setAuthMessage] = useState('');
+      
+      const [activeTab, setActiveTab] = useState(CATEGORIES[0].id);
+      const [searchQuery, setSearchQuery] = useState('');
+      
+      const [posts, setPosts] = useState([]);
+      const [chats, setChats] = useState([]);
+      const [notifications, setNotifications] = useState([]);
+      const [userProfiles, setUserProfiles] = useState({});
+      
+      const [selectedPost, setSelectedPost] = useState(null);
+      const [currentChatId, setCurrentChatId] = useState(null);
+      const [showNotifications, setShowNotifications] = useState(false);
+      
+      const [newPost, setNewPost] = useState({ title: '', price: '', description: '', category: CATEGORIES[0].id, image: null });
+      const fileInputRef = useRef(null);
+      const profileInputRef = useRef(null);
+      const chatContainerRef = useRef(null);
+
+      const [currentMessage, setCurrentMessage] = useState('');
+      const [myTab, setMyTab] = useState('chats');
+
+      const isStudentFormat = (mail) => /^[a-zA-Z]\d{5}@ewha\.hs\.kr$/.test(mail);
+
+      // ✨ 파이어베이스 실시간 데이터 동기화 ✨
+      useEffect(() => {
+        const savedSession = localStorage.getItem('ewha_session');
+        if (savedSession) { setEmail(savedSession); setViewStack(['main']); }
+
+        const unsubPosts = db.collection('ewha_posts').onSnapshot(snap => {
+          const loadedPosts = snap.docs.map(doc => doc.data()).sort((a,b) => b.id - a.id);
+          setPosts(loadedPosts);
+          if(selectedPost) {
+            const updated = loadedPosts.find(p => p.id === selectedPost.id);
+            if(updated) setSelectedPost(updated);
+          }
+        });
+
+        const unsubChats = db.collection('ewha_chats').onSnapshot(snap => {
+          setChats(snap.docs.map(doc => doc.data()).sort((a,b) => a.id - b.id));
+        });
+
+        const unsubNotis = db.collection('ewha_notis').onSnapshot(snap => {
+          setNotifications(snap.docs.map(doc => doc.data()).sort((a,b) => b.id - a.id));
+        });
+
+        const unsubProfiles = db.collection('ewha_profiles').onSnapshot(snap => {
+          const profs = {};
+          snap.docs.forEach(doc => { profs[doc.id] = doc.data().image; });
+          setUserProfiles(profs);
+        });
+
+        return () => { unsubPosts(); unsubChats(); unsubNotis(); unsubProfiles(); };
+      }, [selectedPost]); 
+
+      useEffect(() => {
+        if (currentView === 'chat' && chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, [chats, currentView]);
+
+      useEffect(() => {
+        if (currentView === 'chat' && currentChatId) {
+          notifications.forEach(n => {
+            if (n.type === 'chat' && n.linkId === currentChatId && n.target === email && !n.isRead) {
+              db.collection('ewha_notis').doc(n.id.toString()).update({ isRead: true });
+            }
+          });
+        }
+      }, [currentView, currentChatId, email, notifications]);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (!email.endsWith('@ewha.hs.kr')) { setAuthMessage('학교 이메일(@ewha.hs.kr)로만 접속이 가능합니다.'); return; }
+        setAuthMessage('인증 성공! 이화 마켓에 오신 것을 환영합니다 🌿');
+        setTimeout(() => { localStorage.setItem('ewha_session', email); navigate('main'); }, 800);
+      };
+
+      const handleLogout = () => { localStorage.removeItem('ewha_session'); setEmail(''); setAuthMessage(''); setViewStack(['login']); };
+
+      const sendNotification = (targetEmail, message, type, linkId) => {
+        if(targetEmail === email) return; 
+        const newNoti = { id: Date.now(), target: targetEmail, message, type, linkId, isRead: false, date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+        db.collection('ewha_notis').doc(newNoti.id.toString()).set(newNoti);
+      };
+
+      const handleProfileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_SIZE = 300; 
+              let width = img.width; let height = img.height;
+              if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
+              else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+              canvas.width = width; canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+              
+              db.collection('ewha_profiles').doc(email).set({ image: compressedDataUrl });
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 800; const MAX_HEIGHT = 800;
+              let width = img.width; let height = img.height;
+              if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+              else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+              canvas.width = width; canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+              setNewPost(prev => ({ ...prev, image: compressedDataUrl }));
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handleSubmitPost = async (e) => {
+        e.preventDefault();
+        const postData = { id: Date.now(), author: email, ...newPost, price: parseInt(newPost.price), date: new Date().toLocaleDateString(), applicants: [], status: 'on_sale', isClosed: false };
+        await db.collection('ewha_posts').doc(postData.id.toString()).set(postData);
+        alert('게시물이 성공적으로 등록되었습니다 ✨');
+        setNewPost({ title: '', price: '', description: '', category: CATEGORIES[0].id, image: null });
+        goBack(); setActiveTab(postData.category);
+      };
+
+      const deletePost = (postId) => {
+        if(window.confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+          db.collection('ewha_posts').doc(postId.toString()).delete();
+          alert('게시물이 삭제되었습니다.');
+          resetToMain();
+        }
+      };
+
+      const completeTransaction = (post) => {
+        if(window.confirm('거래를 완료하시겠습니까?\n완료 시 메인 목록과 진행중인 채팅에서 숨겨지며, 마이페이지의 거래 완료 탭으로 이동합니다.')) {
+          db.collection('ewha_posts').doc(post.id.toString()).update({ status: 'completed' });
+          alert('거래가 완료 처리되었습니다. 🎉');
+          resetToMain();
+        }
+      };
+
+      const openOneOnOneChat = (post) => {
+        let existingChat = chats.find(c => c.type === '1on1' && c.postId === post.id && c.participants.includes(email) && c.participants.includes(post.author));
+        if (!existingChat) {
+          existingChat = {
+            id: Date.now(), type: '1on1', postId: post.id, postTitle: post.title, participants: [email, post.author],
+            messages: [{ id: 1, sender: email, text: `안녕하세요! '${post.title}' 보고 연락드렸습니다.`, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]
+          };
+          db.collection('ewha_chats').doc(existingChat.id.toString()).set(existingChat);
+          sendNotification(post.author, `'${post.title}' 새로운 채팅이 왔습니다.`, 'chat', existingChat.id);
+        }
+        setSelectedPost(post); setCurrentChatId(existingChat.id); navigate('chat');
+      };
+
+      const applyForOfficial = (post) => {
+        if (post.applicants.includes(email)) return alert('이미 구매 신청을 완료했습니다.');
+        db.collection('ewha_posts').doc(post.id.toString()).update({
+          applicants: [...post.applicants, email]
+        });
+        sendNotification(post.author, `'${post.title}' 물품에 새로운 구매 신청이 있습니다.`, 'apply', post.id);
+        alert('구매 신청이 완료되었습니다! 작성자에게 알림이 전송되었습니다.');
+      };
+
+      const applyForGroupBuy = (post) => {
+        if (post.applicants.includes(email)) return alert('이미 참여하셨습니다.');
+        db.collection('ewha_posts').doc(post.id.toString()).update({
+          applicants: [...post.applicants, email]
+        });
+        sendNotification(post.author, `'${post.title}' 공구에 새로운 참여자가 있습니다.`, 'apply', post.id);
+        alert('공동구매 참여 신청이 완료되었습니다!');
+      };
+
+      const closeGroupBuy = (post) => {
+        if (post.applicants.length === 0) return alert('참여자가 없습니다.');
+        db.collection('ewha_posts').doc(post.id.toString()).update({ isClosed: true });
+        
+        const newChat = {
+          id: Date.now(), type: 'group', postId: post.id, postTitle: post.title, participants: [post.author, ...post.applicants],
+          messages: [{ id: 1, sender: 'system', text: `'${post.title}' 공동구매가 마감되어 단체 채팅방이 개설되었습니다.`, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }], isGroupClosed: false
+        };
+        db.collection('ewha_chats').doc(newChat.id.toString()).set(newChat);
+        
+        post.applicants.forEach(applicant => {
+          sendNotification(applicant, `'${post.title}' 공구 단체방이 열렸습니다.`, 'chat', newChat.id);
+        });
+        
+        alert('공구 모집이 종료되고 단체 채팅방이 개설되었습니다.');
+        setCurrentChatId(newChat.id);
+        navigate('chat');
+      };
+
+      const sendChatMessage = (e, chat) => {
+        e.preventDefault();
+        if(!currentMessage.trim()) return;
+        const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const newMessage = { id: Date.now(), sender: email, text: currentMessage, time: timeString };
+        
+        db.collection('ewha_chats').doc(chat.id.toString()).update({
+          messages: [...chat.messages, newMessage]
+        });
+        
+        chat.participants.filter(p => p !== email).forEach(p => { sendNotification(p, `'${chat.postTitle}' 메시지가 도착했습니다.`, 'chat', chat.id); });
+        setCurrentMessage('');
+      };
+
+      const handleNotiClick = (noti) => {
+        db.collection('ewha_notis').doc(noti.id.toString()).update({ isRead: true });
+        setShowNotifications(false);
+        if(noti.type === 'chat') {
+          setCurrentChatId(noti.linkId);
+          navigate('chat');
+        } else if (noti.type === 'apply') {
+          const post = posts.find(p => p.id === noti.linkId);
+          if(post) { setSelectedPost(post); navigate('detail'); }
+        }
+      };
+
+      const myNotifications = notifications.filter(n => n.target === email);
+      const unreadCount = myNotifications.filter(n => !n.isRead).length;
+
+      // ==========================================
+      // UI 렌더링 영역
+      // ==========================================
+
+      if (currentView === 'login') {
+        return (
+          <div className="flex-1 flex flex-col items-center justify-center bg-green-50/50 p-6">
+            <div className="w-full bg-white p-8 rounded-[2rem] shadow-xl border border-green-100 text-center">
+              <div className="flex flex-col items-center justify-center mb-6">
+                <h1 className="text-5xl font-normal text-green-600 tracking-tight">이화 마켓</h1>
+              </div>
+              <p className="mb-8 text-base text-gray-500">이화인들만의 따뜻한 공간 🌿</p>
+              <form onSubmit={handleLogin} className="space-y-4 text-left">
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="아이디@ewha.hs.kr" required
+                  className="w-full rounded-2xl border-2 border-gray-100 p-4 bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none text-lg transition-colors" />
+                <button type="submit" className="w-full rounded-2xl bg-green-500 p-4 text-xl text-white hover:bg-green-600 shadow-md">이화인 인증하기</button>
+              </form>
+              {authMessage && <p className={`mt-5 text-lg ${authMessage.includes('성공') ? 'text-green-600' : 'text-red-400'}`}>{authMessage}</p>}
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'write') {
+        return (
+          <div className="flex-1 flex flex-col bg-white pb-20">
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-100 bg-white p-4">
+              <button onClick={goBack} className="text-gray-500"><Icon.Close /></button>
+              <h1 className="text-xl text-gray-800">물품 등록</h1>
+              <div className="w-7" />
+            </header>
+            <form onSubmit={handleSubmitPost} className="p-5 space-y-6 overflow-y-auto flex-1">
+              <div className="flex flex-col items-center justify-center w-full">
+                <div onClick={() => fileInputRef.current.click()} className="w-full h-40 border-2 border-dashed border-green-300 rounded-2xl bg-green-50 flex flex-col items-center justify-center text-green-600 cursor-pointer overflow-hidden relative">
+                  {newPost.image ? (
+                    <img src={newPost.image} alt="미리보기" className="w-full h-full object-cover" />
+                  ) : (
+                    <><Icon.Image /><span className="mt-2 text-lg">사진 등록하기</span></>
+                  )}
+                </div>
+                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+              </div>
+
+              <input type="text" placeholder="글 제목" value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value })} required className="w-full border-b-2 border-gray-100 py-3 text-xl focus:border-green-500 outline-none" />
+              <select value={newPost.category} onChange={(e) => setNewPost({ ...newPost, category: e.target.value })} className="w-full border-b-2 border-gray-100 py-3 text-lg text-gray-600 focus:border-green-500 outline-none">
+                {CATEGORIES.map(cat => (cat.id === 'official' && isStudentFormat(email)) ? null : <option key={cat.id} value={cat.id}>{cat.label}</option>)}
+              </select>
+              <input type="number" placeholder="가격 (원)" value={newPost.price} onChange={(e) => setNewPost({ ...newPost, price: e.target.value })} required className="w-full border-b-2 border-gray-100 py-3 text-xl focus:border-green-500 outline-none" />
+              <textarea placeholder="물품에 대한 자세한 설명을 작성해주세요." value={newPost.description} onChange={(e) => setNewPost({ ...newPost, description: e.target.value })} required className="w-full h-40 resize-none rounded-2xl border-2 border-gray-100 p-4 focus:border-green-400 outline-none text-lg" />
+              <button type="submit" className="w-full rounded-2xl bg-green-500 p-4 text-xl text-white hover:bg-green-600 shadow-md">등록 완료하기</button>
+            </form>
+          </div>
+        );
+      }
+
+      if (currentView === 'detail' && selectedPost) {
+        const isAuthor = selectedPost.author === email;
+        const isClosed = selectedPost.status === 'completed';
+        const isOfficial = selectedPost.category === 'official';
+        const isGroupBuy = selectedPost.category === 'group_buy';
+        const isUsedOrClothes = selectedPost.category === 'used' || selectedPost.category === 'clothes';
+
+        return (
+          <div className="flex-1 flex flex-col bg-white pb-24 relative">
+            <header className="absolute top-0 w-full z-10 flex items-center justify-between p-4">
+              <button onClick={goBack} className="text-gray-600 bg-white/90 rounded-full p-2 shadow-md"><Icon.ChevronLeft /></button>
+              {isAuthor && (
+                <button onClick={() => deletePost(selectedPost.id)} className="text-red-500 bg-white/90 rounded-full p-2 shadow-md"><Icon.Trash /></button>
+              )}
+            </header>
+            
+            <div className="h-72 w-full bg-gray-100 flex flex-col items-center justify-center overflow-hidden">
+              {selectedPost.image ? <img src={selectedPost.image} alt="상품" className="w-full h-full object-cover" /> : <div className="text-gray-400 flex flex-col items-center"><Icon.Image /><span className="text-lg mt-2">사진 없음</span></div>}
+            </div>
+
+            <div className="p-5 flex-1 overflow-y-auto">
+              <div className="flex items-center space-x-3 mb-4 pb-4 border-b-2 border-gray-100">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 overflow-hidden">
+                  {userProfiles[selectedPost.author] ? <img src={userProfiles[selectedPost.author]} className="w-full h-full object-cover" /> : <Icon.User />}
+                </div>
+                <div>
+                  <p className="text-lg text-gray-800">{selectedPost.author.split('@')[0]}</p>
+                  <p className="text-sm text-green-600">{isStudentFormat(selectedPost.author) ? '인증된 재학생' : '공식 인증 계정'}</p>
+                </div>
+              </div>
+              
+              <h1 className="text-2xl text-gray-900 mb-1">{selectedPost.title} {isClosed && <span className="text-xl text-red-500 ml-2">(거래완료)</span>}</h1>
+              <p className="text-sm text-gray-400 mb-4">{CATEGORIES.find(c => c.id === selectedPost.category)?.label} · {selectedPost.date}</p>
+              <p className="text-lg text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 p-5 rounded-2xl">{selectedPost.description}</p>
+              
+              {(isOfficial || isGroupBuy) && (
+                <div className="mt-5 p-4 border-2 border-green-100 rounded-2xl bg-green-50/50">
+                  <p className="text-lg text-green-700 flex items-center"><Icon.Users /> <span className="ml-2">현재 신청 인원: {selectedPost.applicants?.length || 0}명</span></p>
+                  {isAuthor && selectedPost.applicants?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t-2 border-green-200">
+                      <p className="text-base text-gray-600 mb-2">신청자 목록 (작성자 전용)</p>
+                      <ul className="text-lg text-gray-800 space-y-1">
+                        {selectedPost.applicants.map((app, idx) => <li key={idx}>- {app.split('@')[0]} 학우</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="absolute bottom-0 w-full border-t-2 border-gray-100 bg-white p-4 flex items-center justify-between z-20 shadow-[0_-10px_15px_rgba(0,0,0,0.05)]">
+              <div className="pl-2">
+                <p className="text-sm text-gray-500 mb-0.5">금액</p>
+                <p className="text-2xl text-gray-900">{selectedPost.price.toLocaleString()}원</p>
+              </div>
+              
+              {!isAuthor && !isClosed && (
+                isOfficial ? (
+                  <button onClick={() => applyForOfficial(selectedPost)} className="bg-green-500 text-white px-6 py-4 rounded-2xl text-xl shadow-md hover:bg-green-600">구매 신청하기</button>
+                ) : isGroupBuy ? (
+                  <button onClick={() => applyForGroupBuy(selectedPost)} disabled={selectedPost.isClosed} className={`px-6 py-4 rounded-2xl text-xl shadow-md ${selectedPost.isClosed ? 'bg-gray-400 text-white' : 'bg-green-500 text-white hover:bg-green-600'}`}>
+                    {selectedPost.isClosed ? '모집 마감됨' : '공동구매 참여하기'}
+                  </button>
+                ) : (
+                  <button onClick={() => openOneOnOneChat(selectedPost)} className="flex items-center space-x-2 bg-green-500 text-white px-6 py-4 rounded-2xl text-xl shadow-md hover:bg-green-600">
+                    <Icon.Message /><span>채팅하기</span>
+                  </button>
+                )
+              )}
+
+              {isAuthor && !isClosed && isGroupBuy && !selectedPost.isClosed && (
+                <button onClick={() => closeGroupBuy(selectedPost)} className="bg-green-600 text-white px-5 py-4 rounded-2xl text-lg shadow-md hover:bg-green-700">
+                  공구 모집종료 및 채팅열기
+                </button>
+              )}
+              {isAuthor && !isClosed && isUsedOrClothes && (
+                 <button onClick={() => completeTransaction(selectedPost)} className="bg-red-500 text-white px-6 py-4 rounded-2xl text-xl shadow-md hover:bg-red-600">거래 종료</button>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (currentView === 'chat' && currentChatId) {
+        const chat = chats.find(c => c.id === currentChatId);
+        if(!chat) return null;
+        const post = posts.find(p => p.id === chat.postId);
+        const isAuthor = post && post.author === email;
+
+        return (
+          <div className="flex-1 flex flex-col bg-gray-50 h-full">
+            <header className="flex-shrink-0 flex items-center justify-between border-b-2 border-gray-200 bg-white p-4 shadow-sm z-10">
+              <div className="flex items-center max-w-[65%]">
+                <button onClick={goBack} className="text-gray-500 mr-2"><Icon.ChevronLeft /></button>
+                <h1 className="text-xl text-gray-800 truncate">{chat.postTitle}</h1>
+              </div>
+              <button onClick={() => { setSelectedPost(post); navigate('detail'); }} className="text-base text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-200 shadow-sm flex items-center whitespace-nowrap">
+                상세 보기 <span className="ml-1 text-lg">›</span>
+              </button>
+            </header>
+
+            {chat.type === 'group' && isAuthor && !chat.isGroupClosed && (
+               <div className="m-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex justify-between items-center flex-shrink-0">
+                 <span className="text-base text-red-600">이 공구를 최종 종료하시겠습니까?</span>
+                 <button onClick={() => {
+                   db.collection('ewha_chats').doc(chat.id.toString()).update({ isGroupClosed: true });
+                   db.collection('ewha_posts').doc(post.id.toString()).update({ status: 'completed' });
+                   alert('공구가 최종 종료되었습니다.');
+                 }} className="bg-red-500 text-white px-4 py-2 rounded-xl text-lg hover:bg-red-600">공구 종료</button>
+               </div>
+            )}
+            {chat.isGroupClosed && <div className="m-4 text-center text-red-500 text-lg bg-red-50 py-3 rounded-2xl flex-shrink-0 border border-red-200">최종 종료된 공구입니다.</div>}
+
+            <div className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4" ref={chatContainerRef}>
+              <div className="text-center text-sm text-gray-400 my-2 bg-gray-200/50 rounded-full py-1 w-3/4 mx-auto">대화가 시작되었습니다.</div>
+              {chat.messages.map(msg => {
+                const isSystem = msg.sender === 'system';
+                if (isSystem) {
+                  return (
+                    <div key={msg.id} className="flex justify-center my-2">
+                      <span className="text-sm text-green-700 bg-green-100 px-4 py-1.5 rounded-full">{msg.text}</span>
+                    </div>
+                  );
+                }
+
+                const isMe = msg.sender === email;
+                const senderProfile = userProfiles[msg.sender];
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-start`}>
+                    {!isMe && (
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex-shrink-0 mr-2 overflow-hidden flex items-center justify-center border border-gray-200">
+                        {senderProfile ? <img src={senderProfile} className="w-full h-full object-cover" /> : <Icon.User />}
+                      </div>
+                    )}
+                    <div className="flex flex-col max-w-[75%]">
+                      {!isMe && <span className="text-sm text-gray-500 mb-1 ml-1">{msg.sender.split('@')[0]}</span>}
+                      <div className="flex items-end space-x-1">
+                        {isMe && <span className="text-xs text-gray-400 mb-1">{msg.time}</span>}
+                        <div className={`${isMe ? 'bg-green-500 text-white rounded-tr-sm' : 'bg-white border-2 border-gray-100 text-gray-800 rounded-tl-sm'} p-3 rounded-2xl text-lg shadow-sm`}>
+                          {msg.text}
+                        </div>
+                        {!isMe && <span className="text-xs text-gray-400 mb-1">{msg.time}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {(!chat.isGroupClosed) && (
+              <form onSubmit={(e) => sendChatMessage(e, chat)} className="flex-shrink-0 bg-white border-t-2 border-gray-200 p-3 flex items-center space-x-2">
+                <input type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="메시지 입력..." className="flex-1 bg-gray-100 rounded-full px-5 py-4 focus:outline-none text-lg" />
+                <button type="submit" className="bg-green-500 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-md"><Icon.Plus /></button>
+              </form>
+            )}
+          </div>
+        );
+      }
+
+      if (currentView === 'my') {
+        const myActivePosts = posts.filter(p => p.author === email && p.status !== 'completed');
+        const myCompletedPosts = posts.filter(p => p.author === email && p.status === 'completed');
+        const myChats = chats.filter(chat => 
+          chat.participants.includes(email) && 
+          posts.find(p=>p.id===chat.postId)?.status !== 'completed' &&
+          !chat.isGroupClosed
+        );
+
+        return (
+          <div className="flex-1 flex flex-col bg-gray-50 pb-20">
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-100 bg-white p-4">
+              <button onClick={goBack} className="text-gray-500"><Icon.ChevronLeft /></button>
+              <h1 className="text-xl text-gray-800">마이페이지</h1>
+              <button onClick={handleLogout} className="text-base text-gray-400 hover:text-red-400">로그아웃</button>
+            </header>
+
+            <div className="bg-white p-6 border-b-2 border-gray-100 flex flex-col items-center">
+              <div onClick={() => profileInputRef.current.click()} className="relative w-24 h-24 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center text-green-600 cursor-pointer overflow-hidden shadow-sm group">
+                {userProfiles[email] ? (
+                  <img src={userProfiles[email]} className="w-full h-full object-cover group-hover:opacity-70 transition" alt="프로필" />
+                ) : (
+                  <Icon.User />
+                )}
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-sm">변경</div>
+              </div>
+              <input type="file" accept="image/*" ref={profileInputRef} onChange={handleProfileUpload} className="hidden" />
+              <h2 className="text-2xl text-gray-800 mt-3">{email.split('@')[0]} 학우님</h2>
+              <p className="text-base text-gray-500">{email}</p>
+            </div>
+
+            <div className="flex border-b-2 border-gray-200 bg-white">
+              <button onClick={() => setMyTab('chats')} className={`flex-1 py-4 text-base ${myTab === 'chats' ? 'border-b-4 border-green-500 text-green-600' : 'text-gray-400'}`}>진행중 채팅</button>
+              <button onClick={() => setMyTab('posts')} className={`flex-1 py-4 text-base ${myTab === 'posts' ? 'border-b-4 border-green-500 text-green-600' : 'text-gray-400'}`}>내 게시물</button>
+              <button onClick={() => setMyTab('completed')} className={`flex-1 py-4 text-base ${myTab === 'completed' ? 'border-b-4 border-green-500 text-green-600' : 'text-gray-400'}`}>거래 완료</button>
+            </div>
+
+            <div className="p-4 space-y-3 flex-1 overflow-y-auto">
+              {myTab === 'chats' && myChats.map(chat => (
+                <div key={chat.id} onClick={() => { setCurrentChatId(chat.id); navigate('chat'); }} className="flex items-center bg-white p-4 rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer">
+                  <div className="flex-1 truncate">
+                    <h4 className="text-lg text-gray-800 truncate">{chat.postTitle} {chat.type === 'group' && <span className="text-sm text-green-600 ml-1">(공구 단톡)</span>}</h4>
+                    <p className="text-sm text-gray-500 mt-1 truncate">{chat.messages[chat.messages.length-1]?.text}</p>
+                  </div>
+                </div>
+              ))}
+              {myTab === 'chats' && myChats.length === 0 && <p className="text-center text-lg text-gray-400 py-10">진행 중인 채팅이 없습니다.</p>}
+
+              {myTab === 'posts' && myActivePosts.map(post => (
+                <div key={post.id} className="flex items-center bg-white p-3 rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer">
+                  <div className="flex-1 truncate pr-2" onClick={() => { setSelectedPost(post); navigate('detail'); }}>
+                    <h4 className="text-lg text-gray-800 truncate">{post.title}</h4>
+                    <p className="text-sm text-gray-400 mt-1">{post.price.toLocaleString()}원</p>
+                  </div>
+                  <button onClick={() => deletePost(post.id)} className="bg-red-50 text-red-500 p-2 rounded-xl border border-red-100"><Icon.Trash /></button>
+                </div>
+              ))}
+              {myTab === 'posts' && myActivePosts.length === 0 && <p className="text-center text-lg text-gray-400 py-10">등록한 판매 물품이 없습니다.</p>}
+
+              {myTab === 'completed' && myCompletedPosts.map(post => (
+                <div key={post.id} className="flex items-center bg-white p-3 rounded-2xl shadow-sm border-2 border-gray-100 opacity-60">
+                  <div className="flex-1 truncate pr-2" onClick={() => { setSelectedPost(post); navigate('detail'); }}>
+                    <h4 className="text-lg text-gray-800 line-through truncate">{post.title}</h4>
+                    <p className="text-sm text-gray-400 mt-1">{post.price.toLocaleString()}원</p>
+                  </div>
+                  <span className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-lg">완료</span>
+                </div>
+              ))}
+              {myTab === 'completed' && myCompletedPosts.length === 0 && <p className="text-center text-lg text-gray-400 py-10">거래가 완료된 물품이 없습니다.</p>}
+            </div>
+          </div>
+        );
+      }
+
+      const filteredPosts = posts
+        .filter(post => post.status !== 'completed')
+        .filter(post => post.category === activeTab)
+        .filter(post => post.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      return (
+        <div className="flex-1 flex flex-col bg-gray-50 pb-24 relative">
+          <header className="sticky top-0 z-10 bg-white shadow-sm border-b-2 border-gray-100">
+            <div className="flex items-center justify-between px-4 py-4">
+              <div onClick={resetToMain} className="flex items-center cursor-pointer">
+                <h1 className="text-3xl text-green-500">이화 마켓</h1>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <button onClick={() => setShowNotifications(!showNotifications)} className="text-gray-400 p-1 relative">
+                    <Icon.Bell />
+                    {unreadCount > 0 && <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border-2 border-gray-100 overflow-hidden z-50">
+                      <div className="p-3 bg-gray-100 text-base text-gray-700 border-b-2">알림 내역</div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {myNotifications.length === 0 ? <p className="p-4 text-base text-center text-gray-400">새로운 알림이 없습니다.</p> :
+                          myNotifications.map(noti => (
+                            <div key={noti.id} onClick={() => handleNotiClick(noti)} className={`p-4 border-b-2 text-sm cursor-pointer ${noti.isRead ? 'text-gray-400 bg-white' : 'text-gray-800 bg-green-50'}`}>
+                              {noti.message} <div className="text-xs text-gray-400 mt-1">{noti.date}</div>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => { setMyTab('chats'); navigate('my'); }} className="flex items-center space-x-1 text-base text-gray-500 bg-gray-100 px-4 py-2 rounded-full shadow-sm">
+                  <Icon.User /> <span>MY</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="px-4 pb-3">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400"><Icon.Search /></div>
+                <input type="text" placeholder="어떤 물품을 찾으시나요?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-gray-100 text-lg border-none rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-green-400" />
+              </div>
+            </div>
+
+            <nav className="flex overflow-x-auto px-2 scrollbar-hide border-t-2 border-gray-50">
+              {CATEGORIES.map((tab) => (
+                <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
+                  className={`whitespace-nowrap px-4 py-4 text-lg transition-all ${activeTab === tab.id ? 'border-b-4 border-green-500 text-green-600' : 'text-gray-400'}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </header>
+
+          <main className="p-4 flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4">
+              {filteredPosts.length > 0 ? filteredPosts.map(post => (
+                <div key={post.id} onClick={() => { setSelectedPost(post); navigate('detail'); }} className="cursor-pointer overflow-hidden rounded-[1.5rem] bg-white shadow-md border-2 border-gray-100 flex flex-col">
+                  <div className="h-36 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {post.image ? <img src={post.image} className="w-full h-full object-cover" alt="썸네일"/> : <span className="text-gray-300"><Icon.Image /></span>}
+                  </div>
+                  <div className="p-4 flex flex-col flex-1">
+                    <h2 className="line-clamp-1 text-lg text-gray-800 mb-1">{post.title}</h2>
+                    <p className="text-xl text-green-600 mb-2">{post.price.toLocaleString()}원</p>
+                    <div className="mt-auto flex justify-between items-end">
+                      <span className="text-sm text-gray-400">{post.date}</span>
+                      {(post.category === 'official' || post.category === 'group_buy') && (
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-lg">신청 {post.applicants?.length || 0}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="col-span-2 py-24 text-center text-lg text-gray-400 flex flex-col items-center">
+                  <Icon.Search />
+                  <p className="mt-4">해당 카테고리에 등록된 물품이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </main>
+
+          <button onClick={() => navigate('write')} className="absolute bottom-6 right-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-white shadow-2xl hover:bg-green-600 z-10">
+            <Icon.Plus />
+          </button>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
